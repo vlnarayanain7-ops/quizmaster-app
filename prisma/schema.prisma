@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  name         String?
+  role         String   @default("STUDENT") // STUDENT or ADMIN
+  
+  // Gamification
+  xp           Int      @default(0)
+  level        Int      @default(1)
+  streak       Int      @default(0)
+  lastActive   DateTime @default(now())
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  quizzes      QuizAttempt[]
+  wrongAnswers WrongAnswer[]
+}
+
+model Subject {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  topics      Topic[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Topic {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  subjectId   String
+  subject     Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  flashcards  Flashcard[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  text          String   // Now supports Markdown!
+  options       String   // JSON string of array of options
+  correctOption Int
+  topicId       String
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  wrongAnswers  WrongAnswer[]
+}
+
+model Flashcard {
+  id           String   @id @default(uuid())
+  front        String   // Markdown supported
+  back         String   // Markdown supported
+  
+  // Spaced Repetition Fields
+  interval     Int      @default(1)    // Days until next review
+  repetition   Int      @default(0)
+  easeFactor   Float    @default(2.5)
+  nextReview   DateTime @default(now())
+
+  topicId      String
+  topic        Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model QuizAttempt {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId   String
+  score     Int
+  total     Int
+  xpEarned  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model WrongAnswer {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
